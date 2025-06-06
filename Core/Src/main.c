@@ -113,16 +113,23 @@ int main(void)
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
     /* USER CODE BEGIN 3 */
-//    printf("Hello Sangjun! \r\n");
-//    HAL_Delay(1000);
+    uint8_t stableCount = 0;
 
-    btnState = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+    for (i = 0; i < 5; i++)
+    {
+      if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
+      {
+        stableCount ++;
+      }
+      HAL_Delay(10);
+    }
+
+    btnState = (stableCount > 5) ? GPIO_PIN_SET : GPIO_PIN_RESET;        // btn debouncing
 
     if (btnState == GPIO_PIN_SET && prevBtnState == GPIO_PIN_RESET)
     {
       HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);       // Green
       // HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);   // Blue - using GPIO Pin alias (main.h)
-      HAL_Delay(50);     // debouncing
     }
 
     prevBtnState = btnState;
