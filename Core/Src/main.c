@@ -101,6 +101,8 @@ int main(void)
   MX_USB_HOST_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  uint8_t btnState = 0;
+  uint8_t prevBtnState = 0;
 
   /* USER CODE END 2 */
 
@@ -112,8 +114,16 @@ int main(void)
     MX_USB_HOST_Process();
     /* USER CODE BEGIN 3 */
     printf("Hello Sangjun! \r\n");
-    HAL_Delay(500);
+    HAL_Delay(1000);
 
+    btnState = HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0);
+
+    if (btnState == GPIO_PIN_SET && prevBtnState == GPIO_PIN_RESET)
+    {
+      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+    }
+
+    prevBtnState = btnState;
   }
   /* USER CODE END 3 */
 }
