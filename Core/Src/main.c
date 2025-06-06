@@ -120,7 +120,8 @@ int main(void)
 
     if (btnState == GPIO_PIN_SET && prevBtnState == GPIO_PIN_RESET)
     {
-      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+      // HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);       // Green
+      HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);   // Blue - using GPIO Pin alias (main.h)
     }
 
     prevBtnState = btnState;
