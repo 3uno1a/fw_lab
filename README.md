@@ -9,15 +9,13 @@
 - STMCubeIDE 1.16.0
 - F4 V1.28.1
 
-
-
 ## To Do
-- uart - func printf / uart ( on Board )
-- gpio - Toggle LED / Read Button ( on Board )
 - i2c - CS43L22 audio ADC ( on Board )
 - spi - LIS3DSH mems ( on Board )
-
-### Next 
 - uart - receive UART
 - FreeRTOS - convert code into FreeRTOS tasks
 - PWM - WS2812 LED control with DMA
+
+### Done
+- uart - func printf / uart ( on Board )
+- gpio - Toggle LED / Read Button ( on Board )
