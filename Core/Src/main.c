@@ -104,6 +104,9 @@ int main(void)
   uint8_t btnState = 0;
   uint8_t prevBtnState = 0;
 
+  uint32_t pressedTime = 0;
+  uint8_t blinking = 0;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,10 +115,11 @@ int main(void)
   {
     /* USER CODE END WHILE */
     MX_USB_HOST_Process();
+
     /* USER CODE BEGIN 3 */
     uint8_t stableCount = 0;
 
-    for (i = 0; i < 5; i++)
+    for (uint8_t i = 0; i < 5; i++)
     {
       if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
       {
@@ -124,12 +128,36 @@ int main(void)
       HAL_Delay(10);
     }
 
-    btnState = (stableCount > 5) ? GPIO_PIN_SET : GPIO_PIN_RESET;        // btn debouncing
+    btnState = (stableCount >= 4) ? GPIO_PIN_SET : GPIO_PIN_RESET;        // btn debouncing
+
 
     if (btnState == GPIO_PIN_SET && prevBtnState == GPIO_PIN_RESET)
     {
-      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);       // Green
-      // HAL_GPIO_TogglePin(LD6_GPIO_Port, LD6_Pin);   // Blue - using GPIO Pin alias (main.h)
+      pressedTime = HAL_GetTick();
+    }
+
+    if (btnState == GPIO_PIN_SET && (HAL_GetTick() - pressedTime >= 2000))
+    {
+      blinking = 1;
+    }
+
+    if (btnState == GPIO_PIN_RESET && prevBtnState == GPIO_PIN_SET)
+    {
+      if (HAL_GetTick() - pressedTime < 2000)
+      {
+        HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);       // Green
+      }
+      blinking = 0;         // stop blinking blue LED
+    }
+
+    if (blinking)
+    {
+      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);     // Blue
+      HAL_Delay(50);
+    }
+    else
+    {
+      HAL_Delay(10);
     }
 
     prevBtnState = btnState;
