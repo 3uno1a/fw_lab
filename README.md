@@ -16,3 +16,8 @@
 - gpio - Toggle LED / Read Button ( on Board )
 - i2c - CS43L22 audio ADC ( on Board )
 - spi - LIS3DSH mems ( on Board )
+
+### Next 
+- uart - receive UART
+- FreeRTOS - convert code into FreeRTOS tasks
+- PWM - WS2812 LED control with DMA
