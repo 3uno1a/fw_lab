@@ -59,7 +59,7 @@ void MX_USB_HOST_Process(void);
 /* USER CODE BEGIN PFP */
 void LIS3DSH_Init(void);
 void LIS3DSH_WhoAmI(void);
-uint16_t LIS3DSH_ReadAxisX(void);
+void LIS3DSH_ReadAxes(uint16_t* x, uint16_t* y, uint16_t* z);
 uint8_t LIS3DSH_ReadRegister(uint8_t reg);
 /* USER CODE END PFP */
 
@@ -127,7 +127,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint8_t stableCount = 0;
-    uint16_t x = LIS3DSH_ReadAxisX();
+    uint16_t x, y, z;
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -171,9 +171,9 @@ int main(void)
     }
     prevBtnState = btnState;
 
-    printf("X: %d\r\n", x);
+    LIS3DSH_ReadAxes(&x, &y, &z);
+    printf("X: %d  Y: %d  Z: %d\r\n", x, y, z);
     HAL_Delay(500);
-
   }
   /* USER CODE END 3 */
 }
@@ -229,8 +229,7 @@ void LIS3DSH_Init(void)
   uint8_t tx[2];
 
   tx[0] = 0x20;     // CTRL_REG4
-  tx[1] = 0x67;     // 01100111 - Output Data Rate = 100Hz, XYZ axes on
-
+  tx[1] = 0x67;     // 0110 0111 - Output Data Rate = 100Hz, XYZ axes on
   CS_LOW();
   HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY);
   CS_HIGH();
@@ -255,18 +254,29 @@ void LIS3DSH_WhoAmI(void)       // check sensor(LIS3DSH) connection
   uint8_t who_am_i = LIS3DSH_ReadRegister(0x0F);      // 0x0F = who am i reg
   printf("WHO_AM_I: 0x%02X\r\n", who_am_i);           // 0x3F -> LIS3DSH
 
-  if (who_am_i == 0x3F) {
-          printf("LIS3DSH detected successfully!\r\n");
-      } else {
-          printf("LIS3DSH not detected or SPI communication failed.\r\n");
-      }
+  if (who_am_i == 0x3F)
+  {
+      printf("LIS3DSH detected successfully!\r\n");
+  }
+  else
+  {
+      printf("LIS3DSH not detected or SPI communication failed.\r\n");
+  }
 }
 
-uint16_t LIS3DSH_ReadAxisX(void)
+void LIS3DSH_ReadAxes(uint16_t* x, uint16_t* y, uint16_t* z)
 {
-  uint8_t xl = LIS3DSH_ReadRegister(0x28);    // OUT_X_L
-  uint8_t xh = LIS3DSH_ReadRegister(0x29);    // OUT_X_H
-  return (uint16_t)((xh << 8) | xl);
+  uint8_t rx[6];
+  uint8_t reg = 0x28 | 0xC0;     // read x -> y -> z  0x80 + 0x40
+
+  CS_LOW();
+  HAL_SPI_Transmit(&hspi1, &reg, 1, HAL_MAX_DELAY);
+  HAL_SPI_Receive(&hspi1, rx, 6, HAL_MAX_DELAY);
+  CS_HIGH();
+
+  *x = (uint16_t)((rx[1] << 8) | rx[0]);      // x_msb | x_lsb
+  *y = (uint16_t)((rx[3] << 8) | rx[2]);
+  *z = (uint16_t)((rx[5] << 8) | rx[4]);
 }
 
 /* USER CODE END 4 */
