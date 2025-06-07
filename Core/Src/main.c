@@ -111,10 +111,10 @@ int main(void)
 
   CS_HIGH();
 
+  LIS3DSH_WhoAmI();
+
   LIS3DSH_Init();
   HAL_Delay(100);
-
-  LIS3DSH_WhoAmI();
 
   /* USER CODE END 2 */
 
@@ -127,7 +127,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint8_t stableCount = 0;
-    int16_t x = LIS3DSH_ReadAxisX();
+    uint16_t x = LIS3DSH_ReadAxisX();
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -266,7 +266,7 @@ uint16_t LIS3DSH_ReadAxisX(void)
 {
   uint8_t xl = LIS3DSH_ReadRegister(0x28);    // OUT_X_L
   uint8_t xh = LIS3DSH_ReadRegister(0x29);    // OUT_X_H
-  return (int16_t)((xh << 8) | xl);
+  return (uint16_t)((xh << 8) | xl);
 }
 
 /* USER CODE END 4 */
