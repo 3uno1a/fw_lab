@@ -28,8 +28,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -39,7 +37,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CS_LOW() HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET)  // Start SPI communication
+#define CS_HIGH() HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET)   // End SPI communication
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -58,7 +57,10 @@ void SystemClock_Config(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-
+void LIS3DSH_Init(void);
+void LIS3DSH_WhoAmI(void);
+uint16_t LIS3DSH_ReadAxisX(void);
+uint8_t LIS3DSH_ReadRegister(uint8_t reg);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -107,6 +109,13 @@ int main(void)
   uint32_t pressedTime = 0;
   uint8_t blinking = 0;
 
+  CS_HIGH();
+
+  LIS3DSH_Init();
+  HAL_Delay(100);
+
+  LIS3DSH_WhoAmI();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -118,6 +127,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint8_t stableCount = 0;
+    int16_t x = LIS3DSH_ReadAxisX();
 
     for (uint8_t i = 0; i < 5; i++)
     {
@@ -159,8 +169,11 @@ int main(void)
     {
       HAL_Delay(10);
     }
-
     prevBtnState = btnState;
+
+    printf("X: %d\r\n", x);
+    HAL_Delay(500);
+
   }
   /* USER CODE END 3 */
 }
@@ -211,6 +224,50 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void LIS3DSH_Init(void)
+{
+  uint8_t tx[2];
+
+  tx[0] = 0x20;     // CTRL_REG4
+  tx[1] = 0x67;     // 01100111 - Output Data Rate = 100Hz, XYZ axes on
+
+  CS_LOW();
+  HAL_SPI_Transmit(&hspi1, tx, 2, HAL_MAX_DELAY);
+  CS_HIGH();
+}
+
+
+uint8_t LIS3DSH_ReadRegister(uint8_t reg)
+{
+  uint8_t tx = reg | 0x80;        // read mode - MSB 1
+  uint8_t rx = 0;
+
+  CS_LOW();
+  HAL_SPI_Transmit(&hspi1, &tx, 1, HAL_MAX_DELAY);   // give address to sensor
+  HAL_SPI_Receive(&hspi1, &rx, 1, HAL_MAX_DELAY);    // get data from sensor
+  CS_HIGH();
+
+  return rx;
+}
+
+void LIS3DSH_WhoAmI(void)       // check sensor(LIS3DSH) connection
+{
+  uint8_t who_am_i = LIS3DSH_ReadRegister(0x0F);      // 0x0F = who am i reg
+  printf("WHO_AM_I: 0x%02X\r\n", who_am_i);           // 0x3F -> LIS3DSH
+
+  if (who_am_i == 0x3F) {
+          printf("LIS3DSH detected successfully!\r\n");
+      } else {
+          printf("LIS3DSH not detected or SPI communication failed.\r\n");
+      }
+}
+
+uint16_t LIS3DSH_ReadAxisX(void)
+{
+  uint8_t xl = LIS3DSH_ReadRegister(0x28);    // OUT_X_L
+  uint8_t xh = LIS3DSH_ReadRegister(0x29);    // OUT_X_H
+  return (int16_t)((xh << 8) | xl);
+}
 
 /* USER CODE END 4 */
 
