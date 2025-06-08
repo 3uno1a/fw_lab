@@ -28,6 +28,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -50,7 +51,7 @@
 
 /* USER CODE BEGIN PV */
 char buffer[100];
-uint8_t index = 0;
+uint8_t idx = 0;
 uint8_t uart_rx;
 /* USER CODE END PV */
 
@@ -231,18 +232,27 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   if (huart -> Instance == USART2)
   {
-    if(uart_rx != '\r')
+    if(uart_rx != '\r' && uart_rx != '\n')
     {
-      if(index < sizeof(buffer) - 1)
+      if(idx < sizeof(buffer) - 1)
       {
-        buffer[index++] = uart_rx;
+        buffer[idx++] = uart_rx;
       }
     }
     else
     {
-      buffer[index] = '\0';
-      printf("received msg: %s\r\n", buffer);
-      index = 0;
+      buffer[idx] = '\0';
+      printf("received msg:%s\r\n", buffer);
+
+      if (strcmp(buffer, "on") == 0)
+      {
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
+      }
+      else if (strcmp(buffer, "off") == 0)
+      {
+        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+      }
+      idx = 0;
     }
     HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
   }
