@@ -49,7 +49,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t uart_rx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,9 +103,10 @@ int main(void)
   MX_USB_HOST_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
+
   uint8_t btnState = 0;
   uint8_t prevBtnState = 0;
-
   uint32_t pressedTime = 0;
   uint8_t blinking = 0;
 
@@ -224,6 +225,17 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart -> Instance == USART2)
+  {
+    char str[2] = {uart_rx, '\0'};
+    printf("received msg: %s\r\n", str);
+
+    HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
+  }
+}
+
 void LIS3DSH_Init(void)
 {
   uint8_t tx[2];
