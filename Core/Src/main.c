@@ -49,6 +49,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+char buffer[100];
+uint8_t index = 0;
 uint8_t uart_rx;
 /* USER CODE END PV */
 
@@ -229,9 +231,19 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   if (huart -> Instance == USART2)
   {
-    char str[2] = {uart_rx, '\0'};
-    printf("received msg: %s\r\n", str);
-
+    if(uart_rx != '\r')
+    {
+      if(index < sizeof(buffer) - 1)
+      {
+        buffer[index++] = uart_rx;
+      }
+    }
+    else
+    {
+      buffer[index] = '\0';
+      printf("received msg: %s\r\n", buffer);
+      index = 0;
+    }
     HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
   }
 }
