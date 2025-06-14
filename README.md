@@ -11,11 +11,12 @@
 
 ## To Do
 - i2c - CS43L22 audio ADC ( on Board )
-- spi - LIS3DSH mems ( on Board )
+
 - FreeRTOS - convert code into FreeRTOS tasks
 - PWM - WS2812 LED control with DMA
 
 ### Done
 - uart - func printf / uart ( on Board )
 - gpio - Toggle LED / Read Button ( on Board )
+- spi - LIS3DSH mems ( on Board )
 - uart - receive UART
