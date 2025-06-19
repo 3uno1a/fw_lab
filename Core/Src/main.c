@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
 #include "i2c.h"
 #include "i2s.h"
 #include "spi.h"
@@ -29,6 +30,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +42,9 @@
 /* USER CODE BEGIN PD */
 #define CS_LOW() HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET)  // Start SPI communication
 #define CS_HIGH() HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET)   // End SPI communication
+
+#define CS43L22_I2C_ADDR 0x94
+#define AUDIO_BUF_SIZE 256
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,6 +58,8 @@
 char buffer[100];
 uint8_t idx = 0;
 uint8_t uart_rx;
+
+uint16_t audioBuffer[AUDIO_BUF_SIZE];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,6 +71,9 @@ void LIS3DSH_Init(void);
 void LIS3DSH_WhoAmI(void);
 void LIS3DSH_ReadAxes(uint16_t* x, uint16_t* y, uint16_t* z);
 uint8_t LIS3DSH_ReadRegister(uint8_t reg);
+
+void CS43L22_Init(I2C_HandleTypeDef *hi2c);
+void Generate_SineWave(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -100,6 +110,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
@@ -116,8 +127,12 @@ int main(void)
   CS_HIGH();
 
   LIS3DSH_WhoAmI();
-
   LIS3DSH_Init();
+
+  CS43L22_Init(&hi2c1);
+  Generate_SineWave();
+  HAL_I2S_Transmit_DMA(&hi2s3, audioBuffer, AUDIO_BUF_SIZE);
+
   HAL_Delay(100);
 
   /* USER CODE END 2 */
@@ -131,7 +146,6 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     uint8_t stableCount = 0;
-
     uint16_t x,y,z;
     LIS3DSH_ReadAxes(&x, &y, &z);
 
@@ -179,6 +193,7 @@ int main(void)
       HAL_Delay(10);
     }
     prevBtnState = btnState;
+
   }
   /* USER CODE END 3 */
 }
@@ -321,8 +336,10 @@ void LIS3DSH_ReadAxes(uint16_t* x, uint16_t* y, uint16_t* z)
 
   uint8_t xl = LIS3DSH_ReadRegister(0x28);
   uint8_t xh = LIS3DSH_ReadRegister(0x29);
+
   uint8_t yl = LIS3DSH_ReadRegister(0x2A);
   uint8_t yh = LIS3DSH_ReadRegister(0x2B);
+
   uint8_t zl = LIS3DSH_ReadRegister(0x2C);
   uint8_t zh = LIS3DSH_ReadRegister(0x2D);
 
@@ -330,6 +347,66 @@ void LIS3DSH_ReadAxes(uint16_t* x, uint16_t* y, uint16_t* z)
   *y = (uint16_t)((yh << 8) | yl);
   *z = (uint16_t)((zh << 8) | zl);
 }
+
+void CS43L22_Init(I2C_HandleTypeDef *hi2c)
+{
+  uint8_t data[2];
+
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_4, GPIO_PIN_SET);      // Reset pin
+  HAL_Delay(10);
+
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_6, GPIO_PIN_RESET);    // Mute pin
+
+  // Power Control 1: disable power down
+  data[0] = 0x02;   // Register address
+  data[1] = 0x01;   // Power ON
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  // Clocking Control
+  data[0] = 0x05;
+  data[1] = 0x81;
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  // Interface Control 1
+  data[0] = 0x06;
+  data[1] = 0x07;  // I2S, 16-bit data
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  // Passthrough A & B
+  data[0] = 0x0A;
+  data[1] = 0x00;
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  // Power Ctl2: speaker ON
+  data[0] = 0x04;
+  data[1] = 0xAF;  // Headphone + Speaker enable
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  // Master Volume
+  data[0] = 0x20;
+  data[1] = 0x00;  // 0dB
+  HAL_I2C_Mem_Write(hi2c, CS43L22_I2C_ADDR, data[0], I2C_MEMADD_SIZE_8BIT, &data[1], 1, HAL_MAX_DELAY);
+
+  printf("DAC Init Done!\n");
+}
+
+void Generate_SineWave(void)
+{
+  for (int i = 0; i < AUDIO_BUF_SIZE; i++)
+  {
+    audioBuffer[i] = (int16_t)(10000 * sin(2 * 3.141592 * i / AUDIO_BUF_SIZE));
+  }
+}
+
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    if (hi2s->Instance == SPI3)
+    {
+        HAL_I2S_Transmit_DMA(hi2s, audioBuffer, AUDIO_BUF_SIZE);
+    }
+}
+
 
 /* USER CODE END 4 */
 
