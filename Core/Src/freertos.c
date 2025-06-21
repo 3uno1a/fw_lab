@@ -59,14 +59,14 @@ osThreadId_t buttonTaskHandle;
 const osThreadAttr_t buttonTask_attributes = {
   .name = "buttonTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for ledTask */
 osThreadId_t ledTaskHandle;
 const osThreadAttr_t ledTask_attributes = {
   .name = "ledTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityBelowNormal,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for ledQueue */
 osMessageQueueId_t ledQueueHandle;
@@ -110,7 +110,7 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of ledQueue */
-  ledQueueHandle = osMessageQueueNew(4, sizeof(LedCommand), NULL);
+  ledQueueHandle = osMessageQueueNew (4, sizeof(uint16_t), &ledQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -267,10 +267,11 @@ void StartLedTask(void *argument)
       osDelay(50);
     }
   }
-    /* USER CODE END StartLedTask */
+  /* USER CODE END StartLedTask */
 }
-  /* Private application code --------------------------------------------------*/
-  /* USER CODE BEGIN Application */
 
-  /* USER CODE END Application */
+/* Private application code --------------------------------------------------*/
+/* USER CODE BEGIN Application */
+
+/* USER CODE END Application */
 
