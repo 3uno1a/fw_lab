@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "dma.h"
 #include "i2c.h"
 #include "i2s.h"
@@ -64,8 +65,7 @@ uint16_t audioBuffer[AUDIO_BUF_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void MX_USB_HOST_Process(void);
-
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 void LIS3DSH_Init(void);
 void LIS3DSH_WhoAmI(void);
@@ -114,15 +114,10 @@ int main(void)
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
-  MX_USB_HOST_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
 
-  uint8_t btnState = 0;
-  uint8_t prevBtnState = 0;
-  uint32_t pressedTime = 0;
-  uint8_t blinking = 0;
 
   CS_HIGH();
 
@@ -137,63 +132,30 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* Init scheduler */
+  osKernelInitialize();
+
+  /* Call init function for freertos objects (in cmsis_os2.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-    uint8_t stableCount = 0;
+
     uint16_t x,y,z;
     LIS3DSH_ReadAxes(&x, &y, &z);
 
     printf("X: %d, Y: %d, Z: %d\r\n", x, y, z);
     HAL_Delay(500);
-
-    for (uint8_t i = 0; i < 5; i++)
-    {
-      if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_SET)
-      {
-        stableCount ++;
-      }
-      HAL_Delay(10);
-    }
-
-    btnState = (stableCount >= 4) ? GPIO_PIN_SET : GPIO_PIN_RESET;        // btn debouncing
-
-
-    if (btnState == GPIO_PIN_SET && prevBtnState == GPIO_PIN_RESET)
-    {
-      pressedTime = HAL_GetTick();
-    }
-
-    if (btnState == GPIO_PIN_SET && (HAL_GetTick() - pressedTime >= 2000))
-    {
-      blinking = 1;
-    }
-
-    if (btnState == GPIO_PIN_RESET && prevBtnState == GPIO_PIN_SET)
-    {
-      if (HAL_GetTick() - pressedTime < 2000)
-      {
-        HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);       // Green
-      }
-      blinking = 0;         // stop blinking blue LED
-    }
-
-    if (blinking)
-    {
-      HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);     // Blue
-      HAL_Delay(50);
-    }
-    else
-    {
-      HAL_Delay(10);
-    }
-    prevBtnState = btnState;
-
   }
   /* USER CODE END 3 */
 }
