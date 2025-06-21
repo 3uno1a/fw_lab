@@ -31,12 +31,18 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cmsis_os.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+typedef enum {
+  LED_ON,
+  LED_OFF,
+  LED_TOGGLE,
+  LED_BLINK_START,
+  LED_BLINK_STOP
+} LedCommand;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -53,7 +59,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+extern osMessageQueueId_t ledQueueHandle;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
