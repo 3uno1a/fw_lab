@@ -118,7 +118,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
 
-
   CS_HIGH();
 
   LIS3DSH_WhoAmI();
@@ -206,11 +205,14 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-  if (huart -> Instance == USART2)
+  static LedCommand cmd;
+  if (huart->Instance == USART2)
   {
-    if(uart_rx != '\r' && uart_rx != '\n')
+    if (uart_rx != '\r' && uart_rx != '\n')
     {
       if(idx < sizeof(buffer) - 1)
       {
@@ -220,21 +222,30 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     else
     {
       buffer[idx] = '\0';
-      printf("received msg:%s\r\n", buffer);
+      printf("received msg: %s\r\n", buffer);
 
       if (strcmp(buffer, "on") == 0)
-      {
-        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_SET);
-      }
+        cmd = LED_ON;
       else if (strcmp(buffer, "off") == 0)
+        cmd = LED_OFF;
+      else if (strcmp(buffer, "toggle") == 0)
+        cmd = LED_TOGGLE;
+      else if (strcmp(buffer, "blink start") == 0)
+        cmd = LED_BLINK_START;
+      else if (strcmp(buffer, "blink stop") == 0)
+        cmd = LED_BLINK_STOP;
+
+      if (osMessageQueuePut(ledQueueHandle, &cmd, 0, 0) != osOK)
       {
-        HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
+        printf("Failed to put LED command to queue\r\n");
       }
+
       idx = 0;
     }
     HAL_UART_Receive_IT(&huart2, &uart_rx, 1);
   }
 }
+
 
 void LIS3DSH_Init(void)
 {

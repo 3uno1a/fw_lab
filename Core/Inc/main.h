@@ -37,8 +37,8 @@ extern "C" {
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
 typedef enum {
+  LED_OFF = 0,
   LED_ON,
-  LED_OFF,
   LED_TOGGLE,
   LED_BLINK_START,
   LED_BLINK_STOP
@@ -47,6 +47,7 @@ typedef enum {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
+
 
 /* USER CODE END EC */
 

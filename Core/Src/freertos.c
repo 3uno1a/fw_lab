@@ -22,7 +22,8 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-
+#include <stdio.h>
+#include <string.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -30,7 +31,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+extern UART_HandleTypeDef huart2;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -93,7 +94,6 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -110,7 +110,15 @@ void MX_FREERTOS_Init(void) {
 
   /* Create the queue(s) */
   /* creation of ledQueue */
-  ledQueueHandle = osMessageQueueNew (4, sizeof(uint16_t), &ledQueue_attributes);
+  ledQueueHandle = osMessageQueueNew (4, sizeof(LedCommand), &ledQueue_attributes);
+  if (ledQueueHandle == NULL)
+  {
+    printf("Failed to create ledQueue\r\n");
+  }
+  else
+  {
+    printf("ledQueue created successfully\r\n");
+  }
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -234,6 +242,7 @@ void StartLedTask(void *argument)
   {
     if (osMessageQueueGet(ledQueueHandle, &cmd, NULL, blinking ? 50 : osWaitForever) == osOK)
     {
+      printf("LED Command received: %d\r\n", cmd);
       switch(cmd)
       {
         case LED_ON:
@@ -261,6 +270,7 @@ void StartLedTask(void *argument)
           break;
       }
     }
+
     if (blinking)
     {
       HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
@@ -270,8 +280,4 @@ void StartLedTask(void *argument)
   /* USER CODE END StartLedTask */
 }
 
-/* Private application code --------------------------------------------------*/
-/* USER CODE BEGIN Application */
-
-/* USER CODE END Application */
 
