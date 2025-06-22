@@ -1,6 +1,6 @@
-# 🧪 firmware laboratory 📟
+# 🧪 firmware laboratory 
 
-### Project
+### 📟Project
 - study
 
 ## ⚙️Dev Env
