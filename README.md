@@ -12,12 +12,34 @@
 ---
 
 ## 🌈To Do
-- i2c - CS43L22 audio ADC ( on Board )
-- FreeRTOS - convert code into FreeRTOS tasks
-- PWM - WS2812 LED control with DMA
+### I2C: Audio Playback
+- CS43L22 Audio DAC (on board)
+- Generate sound via I2S and DMA
 
-### ✅Done
-- uart - func printf / uart ( on Board )
-- gpio - Toggle LED / Read Button ( on Board )
-- spi - LIS3DSH mems ( on Board )
-- uart - receive UART
+### RTOS: Task Structuring
+- Refactor monolithic code into:
+  - Button Input Task
+  - LED Control Task
+  - IMU sensor Data Task
+
+
+### PWM: LED Strip Control
+- WS2812 RGB LED (NeoPixel)
+- Drive via DMA + PWM for color effects
+
+---
+
+## ✅Done
+
+### GPIO: Button & LED
+- Short press: Toggle green LED ON/OFF  
+- Long press (2 sec+): Start blue LED blinking 
+
+### UART: Communication & Command Queue
+- Supports command parsing:
+  - on, off, toggle, blink start, blink stop
+- Commands are placed in a msg queue and processed in LED control task
+
+### SPI: MEMS Sensor
+- Communicates with onboard **LIS3DSH** accelerometer
+- Reads X/Y/Z axes via SPI1
