@@ -1,4 +1,4 @@
-# 🧪 fw_lab 📟
+# 🧪 firmware laboratory 📟
 
 ### Project
 - study
